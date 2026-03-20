@@ -1,4 +1,3 @@
-from django.db import models
 from datetime import datetime
 from abc import ABC, abstractmethod
 
@@ -14,6 +13,11 @@ class BaseEntity(ABC):
         }
 
 class Reporter(BaseEntity):
+    id:str
+    name:str
+    email:str
+    team:str
+
     def __init__(self, id, name, email, team):
         self.id = id
         self.name = name
@@ -30,10 +34,18 @@ class Reporter(BaseEntity):
 
 
 class Issue(BaseEntity):
-    STATUS_CHOICES = ['open', 'in progress', 'resolved', 'closed']
+    STATUS_CHOICES = ['open', 'in_progress', 'resolved', 'closed']
     PRIORITY_CHOICES = ['low', 'medium', 'high', 'critical']
 
-    def __init__(self, id, title, description, status, priority, reporter_id, created_at=None):
+    id:str
+    title:str
+    description:str
+    status:str
+    priority:str
+    reporter_id:str
+    created_at:str
+
+    def __init__(self, id, title, description, status, priority, reporter_id:str, created_at=None):
         self.id = id
         self.title = title
         self.description = description
@@ -48,9 +60,9 @@ class Issue(BaseEntity):
         if not self.title:
             raise ValueError("Title cannot be empty")
         if self.status not in self.STATUS_CHOICES:
-            raise ValueError(f"Invalid status\n Status must be one of: {", ".join(self.STATUS_CHOICES)}")
+            raise ValueError(f"Invalid status\n Status must be one of: {', '.join(self.STATUS_CHOICES)}")
         if self.priority not in self.PRIORITY_CHOICES:
-            raise ValueError(f"Invalid priority\n Priority must be one of: {", ".join(self.PRIORITY_CHOICES)}")
+            raise ValueError(f"Invalid priority\n Priority must be one of: {', '.join(self.PRIORITY_CHOICES)}")
 
     def describe(self):
         return f"{self.title} - [{self.priority}]"

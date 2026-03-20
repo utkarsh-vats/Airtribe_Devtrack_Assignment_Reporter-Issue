@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevTrack | Issue Tracker</title>
+    <style>
+        :root {
+            --primary: #238636;
+            --bg: #0d1117;
+            --card: #161b22;
+            --text: #c9d1d9;
+            --accent: #1f6feb;
+        }
+
+        body {
+            font-family: -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 2rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid #30363d;
+            padding: 1.5rem;
+            border-radius: 6px;
+        }
+
+        h2 {
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: 1.2rem;
+        }
+
+        form {
+            display: grid;
+            gap: 12px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: #8b949e;
+            margin-bottom: -8px;
+        }
+
+        input,
+        select,
+        textarea {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .issue-item {
+            border-bottom: 1px solid #30363d;
+            padding: 15px 0;
+        }
+
+        .issue-item:last-child {
+            border: none;
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            font-weight: bold;
+            margin-left: 5px;
+            border: 1px solid #30363d;
+        }
+
+        .critical {
+            color: #f85149;
+            border-color: #f85149;
+        }
+
+        .low {
+            color: #8b949e;
+        }
+
+        .reporter-tag {
+            font-size: 0.8rem;
+            color: var(--accent);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="full-width">DevTrack 🛠️ <span
+                style="font-weight: normal; font-size: 1rem; color: #8b949e;">Engineering Issue Tracker</span></h1>
+
+        <div class="card">
+            <h2>1. Register Reporter</h2>
+            <form id="reporterForm">
+                {% csrf_token %}
+                <!-- <input type="number" id="rep_id" placeholder="ID (e.g. 1)" required> -->
+                <input type="text" id="rep_name" placeholder="Full Name" required>
+                <input type="email" id="rep_email" placeholder="Email Address" required>
+                <select id="rep_team">
+                    <option value="backend">Backend</option>
+                    <option value="frontend">Frontend</option>
+                    <option value="devops">DevOps</option>
+                    <option value="qa">QA</option>
+                </select>
+                <button type="submit" style="background: var(--accent);">Create Reporter</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>2. Report Issue</h2>
+            <form id="issueForm">
+                <!-- <input type="number" id="iss_id" placeholder="Issue ID (e.g. 101)" required> -->
+                <input type="text" id="iss_title" placeholder="Summary" required>
+                <textarea id="iss_desc" placeholder="Details..."></textarea>
+                <div style="display: flex; gap: 10px;">
+                    <select id="iss_status">
+                        <option value="open">Open</option>
+                        <option value="in_progress">In Progress</option>
+                    </select>
+                    <select id="iss_priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <label>Assign to Reporter:</label>
+                <select id="iss_reporter_id" required>
+                    <option value="">-- Select a Reporter --</option>
+                </select>
+                <button type="submit">Submit Issue</button>
+            </form>
+        </div>
+
+        <div class="card full-width">
+            <h2>Active Engineering Issues</h2>
+            <div id="issueList">Loading issues...</div>
+        </div>
+    </div>
+
+    <script>
+        const getCsrfToken = () => document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        // Load Reporters into the Dropdown
+        async function loadReporters() {
+            const res = await fetch('reporters/');
+            const reporters = await res.json();
+            const select = document.getElementById('iss_reporter_id');
+
+            // Keep the first option, clear the rest
+            select.innerHTML = '<option value="">-- Select a Reporter --</option>';
+
+            reporters.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id;
+                opt.textContent = `${r.name} (${r.team})`;
+                select.appendChild(opt);
+            });
+        }
+
+        // Fetch and display issues
+        async function fetchIssues() {
+            const res = await fetch('issues/');
+            const data = await res.json();
+            const list = document.getElementById('issueList');
+            list.innerHTML = data.length ? '' : '<p style="color: #8b949e;">No issues reported yet.</p>';
+
+            data.reverse().forEach(issue => {
+                list.innerHTML += `
+                    <div class="issue-item">
+                        <span class="reporter-tag">REP#${issue.reporter_id}</span>
+                        <strong>#${issue.id} ${issue.title}</strong> 
+                        <span class="badge ${issue.priority}">${issue.priority}</span>
+                        <p style="margin: 5px 0; font-size: 0.9rem; color: #8b949e;">${issue.description}</p>
+                        <small style="color: #484f58;">Status: ${issue.status} | Created: ${issue.created_at.split('.')[0]}</small>
+                    </div>`;
+            });
+        }
+
+        // Handle Reporter Form
+        document.getElementById('reporterForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('rep_name').value,
+                email: document.getElementById('rep_email').value,
+                team: document.getElementById('rep_team').value
+            };
+
+            const res = await fetch('reporters/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert('Reporter Added!');
+                document.getElementById('reporterForm').reset();
+                loadReporters(); // Refresh the dropdown
+            } else {
+                const err = await res.json();
+                alert('Error: ' + err.error);
+            }
+        };
+
+        // Handle Issue Form
+        document.getElementById('issueForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('iss_title').value,
+                description: document.getElementById('iss_desc').value,
+                status: document.getElementById('iss_status').value,
+                priority: document.getElementById('iss_priority').value,
+                reporter_id: document.getElementById('iss_reporter_id').value
+            };
+
+            const res = await fetch('issues/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                alert('Success: ' + data.message);
+                document.getElementById('issueForm').reset();
+                fetchIssues();
+            } else {
+                const err = await res.json();
+                alert('Error: ' + err.error);
+            }
+        };
+
+        // Initial Load
+        loadReporters();
+        fetchIssues();
+    </script>
+</body>
+
+</html>

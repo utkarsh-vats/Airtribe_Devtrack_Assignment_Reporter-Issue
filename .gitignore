@@ -1,6 +1,9 @@
 
 venv/
 
+test.py
+
+# __pycache__/
 
 .env*.local
 issues.json
