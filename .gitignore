@@ -1,0 +1,7 @@
+
+venv/
+
+
+.env*.local
+issues.json
+reporters.json
