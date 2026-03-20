@@ -45,6 +45,8 @@ class Issue(BaseEntity):
     def validate(self):
         if not self.reporter_id:
             raise ValueError("Reporter ID cannot be empty")
+        if not self.title:
+            raise ValueError("Title cannot be empty")
         if self.status not in self.STATUS_CHOICES:
             raise ValueError(f"Invalid status\n Status must be one of: {", ".join(self.STATUS_CHOICES)}")
         if self.priority not in self.PRIORITY_CHOICES:
