@@ -6,7 +6,7 @@ import environ
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(DEBUG=(bool, False))
-dot_env = os.path.join(BASE_DIR, '.env')
+dot_env = os.path.join(BASE_DIR, '.env.local')
 if os.path.exists(dot_env):
     environ.Env.read_env(dot_env)
 
@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     
     # Local Apps 
     'issues',
-    'reporters',
 ]
 
 MIDDLEWARE = [
