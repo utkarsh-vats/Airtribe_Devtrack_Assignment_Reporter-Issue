@@ -122,11 +122,23 @@ def handle_issues(request):
         status_filter = request.GET.get('status')
         priority_filter = request.GET.get('priority')
 
+        result = []
+
         if status_filter in Issue.STATUS_CHOICES:
             status_filtered_issues = [issue for issue in issues if issue['status'] == status_filter]
             if not status_filtered_issues:
                 return JsonResponse({'error': 'No issues found with this status'}, status=404)
-            return JsonResponse(status_filtered_issues, safe=False, status=200)
+            for data in status_filtered_issues:
+                if data.get('priority') == 'critical':
+                    issue = CriticalIssue(**data)
+                elif data.get('priority') == 'low':
+                    issue = LowPriorityIssue(**data)
+                else:
+                    issue = Issue(**data)
+                issue_data = issue.to_dict()
+                issue_data['description_label'] = issue.describe()
+                result.append(issue_data)
+            return JsonResponse(result, safe=False, status=200)
 
         if priority_filter in Issue.PRIORITY_CHOICES:
             priority_filtered_issues = [issue for issue in issues if issue['priority'] == priority_filter]
@@ -138,13 +150,33 @@ def handle_issues(request):
             return JsonResponse({'error': 'No issues found'}, status=404)
 
         if issue_id:
-            for issue in issues:
-                if str(issue['id']) == str(issue_id):
+            for data in issues:
+                if str(data['id']) == str(issue_id):
                     # return JsonResponse(issue, safe=False, status=200)
-                    return JsonResponse(issue, status=200)
+                    if data.get('priority') == 'critical':
+                        issue = CriticalIssue(**data)
+                    elif data.get('priority') == 'low':
+                        issue = LowPriorityIssue(**data)
+                    else:
+                        issue = Issue(**data)
+                    issue_data = issue.to_dict()
+                    issue_data['description_label'] = issue.describe()
+                    return JsonResponse(issue_data, status=200)
             return JsonResponse({'error': 'Issue not found'}, status=404)
         
-        return JsonResponse(issues, safe=False, status=200)
+        # return all issues
+        for data in issues:
+            if data.get('priority') == 'critical':
+                issue = CriticalIssue(**data)
+            elif data.get('priority') == 'low':
+                issue = LowPriorityIssue(**data)
+            else:
+                issue = Issue(**data)
+            issue_data = issue.to_dict()
+            issue_data['description_label'] = issue.describe()
+            result.append(issue_data)
+
+        return JsonResponse(result, safe=False, status=200)
         # return JsonResponse(issues, status=200)
     
     elif request.method == 'POST':
